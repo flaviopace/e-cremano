@@ -12,7 +12,7 @@ SCAN_PAGE_MAX = 30
 baseURL = 'http://www.e-cremano.it/cda/detail.jsp?otype=1027&id=102469&type=Permesso%20di%20Costruire&archive=true&page='
 baseDownload = 'http://www.e-cremano.it/'
 
-def parseHTML(storeFile=False):
+def parseAndUploadPdf(storeFile=False):
 
     pratiche = []
     for page in range(1, SCAN_PAGE_MAX):
@@ -223,7 +223,7 @@ def uploadBlob(b_name, name, blob_name):
         blob.upload_from_file(my_file)
 
 if __name__ == "__main__":
-    pr = parseHTML()
+    pr = parseAndUploadPdf()
 
     #convertPDF()
     # for currpr in pr:
