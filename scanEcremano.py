@@ -12,8 +12,8 @@ SCAN_PAGE_MAX = 30
 baseURL = 'http://www.e-cremano.it/cda/detail.jsp?otype=1027&id=102469&type=Permesso%20di%20Costruire&archive=true&page='
 baseDownload = 'http://www.e-cremano.it/'
 
-def parseAndUploadPdf(storeFile=False):
 
+def parseAndUploadPdf(storeFile=False):
     pratiche = []
     for page in range(1, SCAN_PAGE_MAX):
         myurl = baseURL + str(page)
@@ -22,15 +22,15 @@ def parseAndUploadPdf(storeFile=False):
         req = requests.get(myurl)
         soup = bs(req.content, 'html.parser')
 
-        for div in soup.findAll('div', {"class","left"}):
+        for div in soup.findAll('div', {"class", "left"}):
             print(div.findAll('h1')[1])
         for link in soup.findAll('a', href=True):
-            if "PAP"  in link.text:
+            if "PAP" in link.text:
                 fileIn = link['href'].split('/')[6]
                 localname = '/Users/flaviopace/Downloads/' + fileIn
                 pdflink = baseDownload + link['href']
                 print(pdflink)
-                #save locally
+                # save locally
                 pratiche.append(fileIn)
                 if not isBlobsAvailable('pdf-ecremano', fileIn):
                     response = requests.get(pdflink)
@@ -40,6 +40,7 @@ def parseAndUploadPdf(storeFile=False):
 
     return pratiche
 
+
 def upload_to_bucket(blob_name, path_to_file, bucket_name):
     """ Upload data to a bucket"""
 
@@ -48,7 +49,7 @@ def upload_to_bucket(blob_name, path_to_file, bucket_name):
     storage_client = storage.Client.from_service_account_json(
         '/Users/unicondor/Downloads/pdf-ocr.json')
 
-    print(buckets = list(storage_client.list_buckets()))
+    print(buckets=list(storage_client.list_buckets()))
 
     bucket = storage_client.get_bucket(bucket_name)
     blob = bucket.blob(blob_name)
@@ -57,8 +58,8 @@ def upload_to_bucket(blob_name, path_to_file, bucket_name):
     # returns a public url
     return blob.public_url
 
-def convertPDF():
 
+def convertPDF():
     # Google cloud
     client = vision.ImageAnnotatorClient()
     image = vision.Image()  # Py2+3 if hasattr(vision, 'Image') else vision.types.Image()
@@ -72,6 +73,7 @@ def convertPDF():
         print(text.description)
         vertices = ['(%s,%s)' % (v.x, v.y) for v in text.bounding_poly.vertices]
         print('bounds:', ",".join(vertices))
+
 
 def async_detect_document(gcs_source_uri, gcs_destination_uri, localfile):
     """OCR with PDF/TIFF as source files on GCS"""
@@ -146,6 +148,7 @@ def async_detect_document(gcs_source_uri, gcs_destination_uri, localfile):
         f.write('Full text:\n'.encode())
         f.write(annotation['text'].encode())
 
+
 def jsonToTxt(directory):
     # iterate over files in
     # that directory
@@ -162,7 +165,7 @@ def jsonToTxt(directory):
             data = json.load(f)
             annotation = data['responses'][0]['fullTextAnnotation']
             text = annotation['text']
-            #localfile = f.
+            # localfile = f.
             outfile = filename + '.txt'
             print(outfile)
             with open(outfile, 'wb') as out:
@@ -180,6 +183,7 @@ def jsonToTxt(directory):
             # Closing file
             f.close()
 
+
 def getInfo(directory):
     for filename in os.listdir(directory):
         f = os.path.join(directory, filename)
@@ -196,7 +200,6 @@ def getInfo(directory):
 
 
 def isBlobsAvailable(b_name, name):
-
     storage_client = storage.Client()
 
     # Note: Client.list_blobs requires at least package version 1.17.0.
@@ -215,22 +218,20 @@ def isBlobsAvailable(b_name, name):
 
 
 def uploadBlob(b_name, name, blob_name):
-
     client = storage.Client()
     bucket = client.get_bucket(b_name)
     blob = bucket.blob(blob_name)
     with open(name, "rb") as my_file:
         blob.upload_from_file(my_file)
 
+
 if __name__ == "__main__":
     pr = parseAndUploadPdf()
 
-    #convertPDF()
+    # convertPDF()
     # for currpr in pr:
     #     print("AI ML Processing PDF {}".format(currpr))
     #     googlepath = 'gs://pdf-ecremano/' + currpr
     #     async_detect_document(googlepath, googlepath + '.txt', currpr.replace('pdf', 'txt'))
-    #jsonToTxt('/Users/flaviopace/Documents/repos/e-cremano/e-cremano')
-    #getInfo('/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt')
-
-
+    # jsonToTxt('/Users/flaviopace/Documents/repos/e-cremano/e-cremano')
+    # getInfo('/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt')
