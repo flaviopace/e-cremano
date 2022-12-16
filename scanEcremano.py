@@ -1,8 +1,6 @@
 import requests
 from bs4 import BeautifulSoup as bs
-from PyPDF2 import PdfReader
 import re
-import io
 import os
 import json
 from google.cloud import vision, storage
@@ -39,24 +37,6 @@ def parseAndUploadPdf(gc):
                     gc.uploadBlob(localname, fileIn)
 
     return pratiche
-
-
-def upload_to_bucket(blob_name, path_to_file, bucket_name):
-    """ Upload data to a bucket"""
-
-    # Explicitly use service account credentials by specifying the private key
-    # file.
-    storage_client = storage.Client.from_service_account_json(
-        '/Users/unicondor/Downloads/pdf-ocr.json')
-
-    print(buckets=list(storage_client.list_buckets()))
-
-    bucket = storage_client.get_bucket(bucket_name)
-    blob = bucket.blob(blob_name)
-    blob.upload_from_filename(path_to_file)
-
-    # returns a public url
-    return blob.public_url
 
 
 def convertPDF():
@@ -159,7 +139,6 @@ def jsonToTxt(directory, outdir):
             print(f)
             # Opening JSON file
             f = open(f)
-
             # returns JSON object as
             # a dictionary
             data = json.load(f)
@@ -171,16 +150,6 @@ def jsonToTxt(directory, outdir):
             with open(outfile, 'wb') as out:
                 out.write('Full text:\n'.encode())
                 out.write(annotation['text'].encode())
-            # match = re.match(r'sig(.*?), nat', text)
-            # bucket_name = match.group(1)
-            # prefix = match.group(2)
-
-            # Iterating through the json
-            # list
-            # for i in data['text']:
-            #     print(i)
-
-            # Closing file
             f.close()
 
 
@@ -201,7 +170,6 @@ def getInfo(directory):
 
 class gCloud():
     """A simple Google Cloud class class"""
-
     def __init__(self, b_name):
         self.storage_client = storage.Client()
         self.b_name = b_name
