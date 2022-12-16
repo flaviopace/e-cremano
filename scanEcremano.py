@@ -13,7 +13,7 @@ baseURL = 'http://www.e-cremano.it/cda/detail.jsp?otype=1027&id=102469&type=Perm
 baseDownload = 'http://www.e-cremano.it/'
 
 
-def parseAndUploadPdf(storeFile=False):
+def parseAndUploadPdf(gc):
     pratiche = []
     for page in range(1, SCAN_PAGE_MAX):
         myurl = baseURL + str(page)
@@ -32,11 +32,11 @@ def parseAndUploadPdf(storeFile=False):
                 print(pdflink)
                 # save locally
                 pratiche.append(fileIn)
-                if not isBlobsAvailable('pdf-ecremano', fileIn):
+                if not gc.isBlobsAvailable(fileIn):
                     response = requests.get(pdflink)
                     with open(localname, 'wb') as f:
                         f.write(response.content)
-                    uploadBlob('pdf-ecremano', localname, fileIn)
+                    gc.uploadBlob(localname, fileIn)
 
     return pratiche
 
@@ -199,87 +199,109 @@ def getInfo(directory):
             f.close()
 
 
-def isBlobsAvailable(b_name, name):
-    storage_client = storage.Client()
+class gCloud():
+    """A simple Google Cloud class class"""
 
-    # Note: Client.list_blobs requires at least package version 1.17.0.
-    blobs = storage_client.list_blobs(bucket_or_name=b_name)
+    def __init__(self, b_name):
+        self.storage_client = storage.Client()
+        self.b_name = b_name
+        self.storedPdf = []
+        self.storedJSON = []
 
-    storedPdf = []
-    for bl in blobs:
-        storedPdf.append(bl.name)
+    def isBlobsAvailable(self, name):
+        # Note: Client.list_blobs requires at least package version 1.17.0.
+        blobs = self.storage_client.list_blobs(bucket_or_name=self.b_name)
 
-    if any(name in s for s in storedPdf):
-        print("{} is already available".format(name))
-        return True
-    else:
-        print("{} is new".format(name))
-        return False
+        for bl in blobs:
+            self.storedPdf.append(bl.name)
 
-def getJSONBlob(b_name):
-    storage_client = storage.Client()
+        if any(name in s for s in self.storedPdf):
+            print("{} is already available".format(name))
+            return True
+        else:
+            print("{} is new".format(name))
+            return False
 
-    # Note: Client.list_blobs requires at least package version 1.17.0.
-    blobs = storage_client.list_blobs(bucket_or_name=b_name)
+    def getJSONBlob(self):
+        # Note: Client.list_blobs requires at least package version 1.17.0.
+        blobs = self.storage_client.list_blobs(bucket_or_name=self.b_name)
 
-    storedJSON = []
-    for bl in blobs:
-        if '.json' in bl.name:
-            storedJSON.append(bl.name)
+        for bl in blobs:
+            if '.json' in bl.name:
+                self.storedJSON.append(bl.name)
 
-    return storedJSON
+    def uploadBlob(self, name, blob_name):
+        client = storage.Client()
+        bucket = client.get_bucket(self.b_name)
+        blob = bucket.blob(blob_name)
+        with open(name, "rb") as my_file:
+            blob.upload_from_file(my_file)
 
-def uploadBlob(b_name, name, blob_name):
-    client = storage.Client()
-    bucket = client.get_bucket(b_name)
-    blob = bucket.blob(blob_name)
-    with open(name, "rb") as my_file:
-        blob.upload_from_file(my_file)
+    def download_blob(self, source_blob_name, destination_file_name):
+        """Downloads a blob from the bucket."""
+        # The ID of your GCS bucket
+        # bucket_name = "your-bucket-name"
 
-def download_blob(bucket_name, source_blob_name, destination_file_name):
-    """Downloads a blob from the bucket."""
-    # The ID of your GCS bucket
-    # bucket_name = "your-bucket-name"
+        # The ID of your GCS object
+        # source_blob_name = "storage-object-name"
 
-    # The ID of your GCS object
-    # source_blob_name = "storage-object-name"
+        # The path to which the file should be downloaded
+        # destination_file_name = "local/path/to/file"
 
-    # The path to which the file should be downloaded
-    # destination_file_name = "local/path/to/file"
+        bucket = self.storage_client.bucket(self.b_name)
 
-    storage_client = storage.Client()
+        # Construct a client side representation of a blob.
+        # Note `Bucket.blob` differs from `Bucket.get_blob` as it doesn't retrieve
+        # any content from Google Cloud Storage. As we don't need additional data,
+        # using `Bucket.blob` is preferred here.
+        blob = bucket.blob(source_blob_name)
+        blob.download_to_filename(destination_file_name)
 
-    bucket = storage_client.bucket(bucket_name)
-
-    # Construct a client side representation of a blob.
-    # Note `Bucket.blob` differs from `Bucket.get_blob` as it doesn't retrieve
-    # any content from Google Cloud Storage. As we don't need additional data,
-    # using `Bucket.blob` is preferred here.
-    blob = bucket.blob(source_blob_name)
-    blob.download_to_filename(destination_file_name)
-
-    print(
-        "Downloaded storage object {} from bucket {} to local file {}.".format(
-            source_blob_name, bucket_name, destination_file_name
+        print(
+            "Downloaded storage object {} from bucket {} to local file {}.".format(
+                source_blob_name, self.b_name, destination_file_name
+            )
         )
-    )
+
+    def upload_to_bucket(self, path_to_file, bucket_name):
+        """ Upload data to a bucket"""
+
+        # Explicitly use service account credentials by specifying the private key
+        # file.
+        print(buckets=list(self.storage_client.list_buckets()))
+
+        bucket = self.storage_client.get_bucket(bucket_name)
+        blob = bucket.blob(self.b_name)
+        blob.upload_from_filename(path_to_file)
+
+        # returns a public url
+        return blob.public_url
+
+    def getJsonList(self):
+        return self.storedJSON
+
+    def getPDFList(self):
+        return self.storedPdf
 
 
 if __name__ == "__main__":
-    pr = parseAndUploadPdf()
+
+    gc = gCloud(b_name='pdf-ecremano')
+
+    pr = parseAndUploadPdf(gc=gc)
 
     print('Checking json')
     for curpr in pr:
-        if not isBlobsAvailable('pdf-ecremano', curpr.replace('.pdf','.txtoutput')):
+        if not gc.isBlobsAvailable(curpr.replace('.pdf','.txtoutput')):
             print("AI ML Processing PDF {}".format(curpr))
             ingspath = 'gs://pdf-ecremano/' + curpr
             outgspath = 'gs://pdf-ecremano/' + curpr.replace('pdf', 'txt')
             async_detect_document(ingspath, outgspath, curpr.replace('pdf', 'txt'))
 
-    jsonfile = getJSONBlob('pdf-ecremano')
+    gc.getJSONBlob()
 
-    for jfile in jsonfile:
-        download_blob('pdf-ecremano', jfile, '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-json/' + jfile)
+    for jfile in gc.getJsonList():
+        gc.download_blob(jfile, '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-json/' + jfile)
 
     jsonToTxt('/Users/flaviopace/Documents/repos/e-cremano/e-cremano-json', '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt/')
 
