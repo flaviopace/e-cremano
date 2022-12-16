@@ -7,7 +7,7 @@ import os
 import json
 from google.cloud import vision, storage
 
-SCAN_PAGE_MAX = 30
+SCAN_PAGE_MAX = 3
 
 baseURL = 'http://www.e-cremano.it/cda/detail.jsp?otype=1027&id=102469&type=Permesso%20di%20Costruire&archive=true&page='
 baseDownload = 'http://www.e-cremano.it/'
@@ -209,11 +209,11 @@ def isBlobsAvailable(b_name, name):
     for bl in blobs:
         storedPdf.append(bl.name)
 
-    if name in storedPdf:
-        print("{} already available".format(name))
+    if any(name in s for s in storedPdf):
+        print("{} is already available".format(name))
         return True
     else:
-        print("{} new".format(name))
+        print("{} is new".format(name))
         return False
 
 
@@ -227,6 +227,13 @@ def uploadBlob(b_name, name, blob_name):
 
 if __name__ == "__main__":
     pr = parseAndUploadPdf()
+
+    print('Checking json')
+    for curpr in pr:
+        if not isBlobsAvailable('pdf-ecremano', curpr.replace('.pdf','.txtoutput')):
+            print("AI ML Processing PDF {}".format(curpr))
+            googlepath = 'gs://pdf-ecremano/' + curpr
+            async_detect_document(googlepath, googlepath + '.txt', curpr.replace('pdf', 'txt'))
 
     # convertPDF()
     # for currpr in pr:
