@@ -149,7 +149,7 @@ def async_detect_document(gcs_source_uri, gcs_destination_uri, localfile):
         f.write(annotation['text'].encode())
 
 
-def jsonToTxt(directory):
+def jsonToTxt(directory, outdir):
     # iterate over files in
     # that directory
     for filename in os.listdir(directory):
@@ -166,7 +166,7 @@ def jsonToTxt(directory):
             annotation = data['responses'][0]['fullTextAnnotation']
             text = annotation['text']
             # localfile = f.
-            outfile = filename + '.txt'
+            outfile = outdir + filename + '.txt'
             print(outfile)
             with open(outfile, 'wb') as out:
                 out.write('Full text:\n'.encode())
@@ -216,6 +216,18 @@ def isBlobsAvailable(b_name, name):
         print("{} is new".format(name))
         return False
 
+def getJSONBlob(b_name):
+    storage_client = storage.Client()
+
+    # Note: Client.list_blobs requires at least package version 1.17.0.
+    blobs = storage_client.list_blobs(bucket_or_name=b_name)
+
+    storedJSON = []
+    for bl in blobs:
+        if '.json' in bl.name:
+            storedJSON.append(bl.name)
+
+    return storedJSON
 
 def uploadBlob(b_name, name, blob_name):
     client = storage.Client()
@@ -223,6 +235,34 @@ def uploadBlob(b_name, name, blob_name):
     blob = bucket.blob(blob_name)
     with open(name, "rb") as my_file:
         blob.upload_from_file(my_file)
+
+def download_blob(bucket_name, source_blob_name, destination_file_name):
+    """Downloads a blob from the bucket."""
+    # The ID of your GCS bucket
+    # bucket_name = "your-bucket-name"
+
+    # The ID of your GCS object
+    # source_blob_name = "storage-object-name"
+
+    # The path to which the file should be downloaded
+    # destination_file_name = "local/path/to/file"
+
+    storage_client = storage.Client()
+
+    bucket = storage_client.bucket(bucket_name)
+
+    # Construct a client side representation of a blob.
+    # Note `Bucket.blob` differs from `Bucket.get_blob` as it doesn't retrieve
+    # any content from Google Cloud Storage. As we don't need additional data,
+    # using `Bucket.blob` is preferred here.
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(destination_file_name)
+
+    print(
+        "Downloaded storage object {} from bucket {} to local file {}.".format(
+            source_blob_name, bucket_name, destination_file_name
+        )
+    )
 
 
 if __name__ == "__main__":
@@ -232,13 +272,15 @@ if __name__ == "__main__":
     for curpr in pr:
         if not isBlobsAvailable('pdf-ecremano', curpr.replace('.pdf','.txtoutput')):
             print("AI ML Processing PDF {}".format(curpr))
-            googlepath = 'gs://pdf-ecremano/' + curpr
-            async_detect_document(googlepath, googlepath + '.txt', curpr.replace('pdf', 'txt'))
+            ingspath = 'gs://pdf-ecremano/' + curpr
+            outgspath = 'gs://pdf-ecremano/' + curpr.replace('pdf', 'txt')
+            async_detect_document(ingspath, outgspath, curpr.replace('pdf', 'txt'))
 
-    # convertPDF()
-    # for currpr in pr:
-    #     print("AI ML Processing PDF {}".format(currpr))
-    #     googlepath = 'gs://pdf-ecremano/' + currpr
-    #     async_detect_document(googlepath, googlepath + '.txt', currpr.replace('pdf', 'txt'))
-    # jsonToTxt('/Users/flaviopace/Documents/repos/e-cremano/e-cremano')
+    jsonfile = getJSONBlob('pdf-ecremano')
+
+    for jfile in jsonfile:
+        download_blob('pdf-ecremano', jfile, '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-json/' + jfile)
+
+    jsonToTxt('/Users/flaviopace/Documents/repos/e-cremano/e-cremano-json', '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt/')
+
     # getInfo('/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt')
