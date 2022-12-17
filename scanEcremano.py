@@ -5,10 +5,13 @@ import os
 import json
 from google.cloud import vision, storage
 
-SCAN_PAGE_MAX = 3
+SCAN_PAGE_MAX = 30
 
 baseURL = 'http://www.e-cremano.it/cda/detail.jsp?otype=1027&id=102469&type=Permesso%20di%20Costruire&archive=true&page='
 baseDownload = 'http://www.e-cremano.it/'
+
+jsonBaseDir = '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-json/'
+txtBaseDir = '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt/'
 
 
 def parseAndUploadPdf(gc):
@@ -129,7 +132,7 @@ def async_detect_document(gcs_source_uri, gcs_destination_uri, localfile):
         f.write(annotation['text'].encode())
 
 
-def jsonToTxt(directory, outdir):
+def convertJsonToTxt(directory, outdir):
     # iterate over files in
     # that directory
     for filename in os.listdir(directory):
@@ -269,8 +272,8 @@ if __name__ == "__main__":
     gc.getJSONBlob()
 
     for jfile in gc.getJsonList():
-        gc.download_blob(jfile, '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-json/' + jfile)
+        gc.download_blob(jfile, jsonBaseDir + jfile)
 
-    jsonToTxt('/Users/flaviopace/Documents/repos/e-cremano/e-cremano-json', '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt/')
+    convertJsonToTxt(jsonBaseDir, txtBaseDir)
 
     # getInfo('/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt')
