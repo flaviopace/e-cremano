@@ -13,6 +13,11 @@ baseDownload = 'http://www.e-cremano.it/'
 jsonBaseDir = '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-json/'
 txtBaseDir = '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt/'
 
+regexPattern = {
+    r' (S|s)ig.[r]?[a]?(.*),?': 2,
+    r' via (.*)': 1,
+    r' veranda (.*)': 1,
+}
 
 def parseAndUploadPdf(gc):
     pratiche = []
@@ -156,20 +161,27 @@ def convertJsonToTxt(directory, outdir):
             f.close()
 
 
-def getInfo(directory):
+def getInfoFromTxt(directory):
+    allveranda = []
     for filename in os.listdir(directory):
         f = os.path.join(directory, filename)
         # checking if it is a file
-        if os.path.isfile(f):
-            print(filename)
+        if os.path.isfile(f) and "ALBO" in f:
+            print("Parsing file content {}".format(filename))
             f = open(f)
             text = f.read()
-            match = re.match(r'(S|s)ig(.*)', text)
-            if match:
-                name = match.group(1)
-                prefix = match.group(2)
+            foundval = [filename]
+            for regex, offset in regexPattern.items():
+                match = re.search(regex, text, re.IGNORECASE)
+                if match:
+                    val = match.group(offset).strip()
+                    foundval.append(val)
+                #if not name:
+                    #print("Regex {} not found!".format(regex))
             f.close()
-
+            if len(foundval) > len(regexPattern):
+                allveranda.append(foundval)
+    return allveranda
 
 class gCloud():
     """A simple Google Cloud class class"""
@@ -276,4 +288,7 @@ if __name__ == "__main__":
 
     convertJsonToTxt(jsonBaseDir, txtBaseDir)
 
-    # getInfo('/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt')
+    alldata = getInfoFromTxt(txtBaseDir)
+
+    for veranda in alldata:
+        print(veranda)
