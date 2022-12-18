@@ -18,7 +18,7 @@ regexPattern = {
     r' (S|s)ig.[r]?[a]?(.*),?': 2,
     r' (via|corso) (.*)': 2,
     r'(.*)veranda(.*)': 1,
-    #r'(ing|geom) (.*)': 2,
+    r'(ing|geom)(.*)': 2,
 }
 
 def parseAndUploadPdf(gc):
@@ -152,14 +152,16 @@ def convertJsonToTxt(directory, outdir):
             # returns JSON object as
             # a dictionary
             data = json.load(f)
-            annotation = data['responses'][0]['fullTextAnnotation']
-            text = annotation['text']
+            # annotation = data['responses'][0]['fullTextAnnotation']
+            # text = annotation['text']
             # localfile = f.
             outfile = outdir + filename + '.txt'
             print(outfile)
             with open(outfile, 'wb') as out:
-                out.write('Full text:\n'.encode())
-                out.write(annotation['text'].encode())
+                for singleiter in range(0, len(data['responses'])):
+                    annotation = data['responses'][singleiter]['fullTextAnnotation']
+                    out.write('Full text:\n'.encode())
+                    out.write(annotation['text'].encode())
             f.close()
 
 
