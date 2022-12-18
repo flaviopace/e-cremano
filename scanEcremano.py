@@ -14,9 +14,11 @@ jsonBaseDir = '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-json/'
 txtBaseDir = '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt/'
 
 regexPattern = {
+    r'- U[\s]?- (.*) [0-9]*:[0-9]*:[0-9]*': 1,
     r' (S|s)ig.[r]?[a]?(.*),?': 2,
     r' (via|corso) (.*)': 2,
     r'(.*)veranda(.*)': 1,
+    #r'(ing|geom) (.*)': 2,
 }
 
 def parseAndUploadPdf(gc):
@@ -74,7 +76,7 @@ def async_detect_document(gcs_source_uri, gcs_destination_uri, localfile):
     mime_type = 'application/pdf'
 
     # How many pages should be grouped into each json output file.
-    batch_size = 2
+    batch_size = 8
 
     client = vision.ImageAnnotatorClient()
 
@@ -269,24 +271,24 @@ class gCloud():
 
 if __name__ == "__main__":
 
-    # gc = gCloud(b_name='pdf-ecremano')
-    #
-    # pr = parseAndUploadPdf(gc=gc)
-    #
-    # print('Checking json')
-    # for curpr in pr:
-    #     if not gc.isBlobsAvailable(curpr.replace('.pdf','.txtoutput')):
-    #         print("AI ML Processing PDF {}".format(curpr))
-    #         ingspath = 'gs://pdf-ecremano/' + curpr
-    #         outgspath = 'gs://pdf-ecremano/' + curpr.replace('pdf', 'txt')
-    #         async_detect_document(ingspath, outgspath, curpr.replace('pdf', 'txt'))
-    #
-    # gc.getJSONBlob()
-    #
-    # for jfile in gc.getJsonList():
-    #     gc.download_blob(jfile, jsonBaseDir + jfile)
-    #
-    # convertJsonToTxt(jsonBaseDir, txtBaseDir)
+    gc = gCloud(b_name='pdf-ecremano')
+
+    pr = parseAndUploadPdf(gc=gc)
+
+    print('Checking json')
+    for curpr in pr:
+        if not gc.isBlobsAvailable(curpr.replace('.pdf','.txtoutput')):
+            print("AI ML Processing PDF {}".format(curpr))
+            ingspath = 'gs://pdf-ecremano/' + curpr
+            outgspath = 'gs://pdf-ecremano/' + curpr.replace('pdf', 'txt')
+            async_detect_document(ingspath, outgspath, curpr.replace('pdf', 'txt'))
+
+    gc.getJSONBlob()
+
+    for jfile in gc.getJsonList():
+        gc.download_blob(jfile, jsonBaseDir + jfile)
+
+    convertJsonToTxt(jsonBaseDir, txtBaseDir)
 
     alldata = getInfoFromTxt(txtBaseDir)
 
