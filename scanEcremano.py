@@ -18,7 +18,7 @@ regexPattern = {
     r' (S|s)ig.[r]?[a]?(.*),?': 2,
     r' (via|corso) (.*) [piano]?': 2,
     r' veranda(.*)': 0,
-    r'( ingegnere|architetto|geometra)(.*)': 2,
+    r'(ingegnere|architetto |geometra)(.*)': 2,
 }
 
 def parseAndUploadPdf(gc):
@@ -179,6 +179,9 @@ def getInfoFromTxt(directory):
                 match = re.search(regex, text, re.IGNORECASE)
                 if match:
                     val = match.group(offset).strip()
+                    if 'ingegnere' in regex:
+                        title = match.group(1) + ': '
+                        val = title + val
                     foundval.append(val)
                 #if not name:
                     #print("Regex {} not found!".format(regex))
@@ -273,27 +276,28 @@ class gCloud():
 
 if __name__ == "__main__":
 
-    gc = gCloud(b_name='pdf-ecremano')
-
-    pr = parseAndUploadPdf(gc=gc)
-
-    print('Checking json')
-    for curpr in pr:
-        if not gc.isBlobsAvailable(curpr.replace('.pdf','.txtoutput')):
-            print("AI ML Processing PDF {}".format(curpr))
-            ingspath = 'gs://pdf-ecremano/' + curpr
-            outgspath = 'gs://pdf-ecremano/' + curpr.replace('pdf', 'txt')
-            async_detect_document(ingspath, outgspath, curpr.replace('pdf', 'txt'))
-
-    gc.getJSONBlob()
-
-    for jfile in gc.getJsonList():
-        gc.download_blob(jfile, jsonBaseDir + jfile)
-
-    convertJsonToTxt(jsonBaseDir, txtBaseDir)
+    # gc = gCloud(b_name='pdf-ecremano')
+    #
+    # pr = parseAndUploadPdf(gc=gc)
+    #
+    # print('Checking json')
+    # for curpr in pr:
+    #     if not gc.isBlobsAvailable(curpr.replace('.pdf','.txtoutput')):
+    #         print("AI ML Processing PDF {}".format(curpr))
+    #         ingspath = 'gs://pdf-ecremano/' + curpr
+    #         outgspath = 'gs://pdf-ecremano/' + curpr.replace('pdf', 'txt')
+    #         async_detect_document(ingspath, outgspath, curpr.replace('pdf', 'txt'))
+    #
+    # gc.getJSONBlob()
+    #
+    # for jfile in gc.getJsonList():
+    #     gc.download_blob(jfile, jsonBaseDir + jfile)
+    #
+    # convertJsonToTxt(jsonBaseDir, txtBaseDir)
 
     alldata = getInfoFromTxt(txtBaseDir)
 
+    print("Found {} matches ".format(len(alldata)))
     for veranda in alldata:
         print(veranda)
     import csv
