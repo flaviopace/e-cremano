@@ -296,3 +296,14 @@ if __name__ == "__main__":
 
     for veranda in alldata:
         print(veranda)
+    import csv
+
+    fields = ['DOC', 'Data', 'Richiedende', 'Via/Corso', 'Tipo Abuso', 'Tecnico']
+
+    with open('GFG.csv', 'w') as f:
+
+        # using csv.writer method from CSV package
+        write = csv.writer(f)
+
+        write.writerow(fields)
+        write.writerows(alldata)
