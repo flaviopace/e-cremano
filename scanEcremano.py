@@ -16,9 +16,9 @@ txtBaseDir = '/Users/flaviopace/Documents/repos/e-cremano/e-cremano-txt/'
 regexPattern = {
     r'- U[\s]?- (.*) [0-9]*:[0-9]*:[0-9]*': 1,
     r' (S|s)ig.[r]?[a]?(.*),?': 2,
-    r' (via|corso) (.*)': 2,
-    r'(.*)veranda(.*)': 1,
-    r'(ing|geom)(.*)': 2,
+    r' (via|corso) (.*) [piano]?': 2,
+    r' veranda(.*)': 0,
+    r'( ingegnere|architetto|geometra)(.*)': 2,
 }
 
 def parseAndUploadPdf(gc):
